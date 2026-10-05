@@ -1,0 +1,46 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcrypt";
+import { generateVerificationToken } from "@/lib/tokens";
+import { sendVerificationEmail } from "@/lib/mailer";
+
+export async function POST(req: Request) {
+  try {
+    const { name, email, password, phone, wilaya, role, image } = await req.json();
+
+    if (!name || !email || !password) {
+      return new NextResponse("Missing required fields", { status: 400 });
+    }
+
+    const exist = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (exist) {
+      return new NextResponse("Email already exists", { status: 400 });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        phone: phone || null,
+        wilaya: wilaya || null,
+        role: role || "STUDENT",
+        image: image || null,
+      },
+    });
+
+    // Generate and send 6-digit OTP
+    const verificationToken = await generateVerificationToken(email);
+    await sendVerificationEmail(verificationToken.identifier, verificationToken.token);
+
+    return NextResponse.json({ success: true, email: user.email });
+  } catch (error: any) {
+    console.error("REGISTER_ERROR", error);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
+}
