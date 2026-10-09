@@ -158,10 +158,13 @@ export default async function ProfilePage() {
         }}
       >
         <div style={{ maxWidth: '520px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.25rem' }}>🔒</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand-green)" }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'white', margin: 0 }}>
-              Double Authentification (2FA par E-mail)
+              Double Authentification (2FA par e-mail)
             </h3>
             <span 
               style={{ 
@@ -174,7 +177,7 @@ export default async function ProfilePage() {
                 border: `1px solid ${user.isTwoFactorEnabled ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.15)'}`
               }}
             >
-              {user.isTwoFactorEnabled ? "Activé 🛡️" : "Désactivé"}
+              {user.isTwoFactorEnabled ? "Activé" : "Désactivé"}
             </span>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0, lineHeight: 1.4 }}>
@@ -196,7 +199,7 @@ export default async function ProfilePage() {
               color: user.isTwoFactorEnabled ? '#ef4444' : undefined,
             }}
           >
-            {user.isTwoFactorEnabled ? "Désactiver le 2FA" : "Activer le 2FA 🛡️"}
+            {user.isTwoFactorEnabled ? "Désactiver le 2FA" : "Activer le 2FA"}
           </button>
         </form>
       </div>

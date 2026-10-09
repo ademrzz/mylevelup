@@ -1,11 +1,49 @@
 import crypto from "crypto";
 
-const CHARGILY_MODE = process.env.CHARGILY_MODE || "test";
-const CHARGILY_SECRET_KEY = process.env.CHARGILY_SECRET_KEY || "";
+/* -------------------------------------------------------------------------- */
+/*  Configuration                                                             */
+/* -------------------------------------------------------------------------- */
 
-const CHARGILY_BASE_URL = CHARGILY_MODE === "live"
-  ? "https://pay.chargily.net/api/v2"
-  : "https://pay.chargily.net/test/api/v2";
+const isProduction = process.env.NODE_ENV === "production";
+
+const CHARGILY_MODE = process.env.CHARGILY_MODE === "live" ? "live" : "test";
+const CHARGILY_SECRET_KEY = process.env.CHARGILY_SECRET_KEY || "";
+const PLACEHOLDER_KEY = "your_chargily_secret_key_here";
+
+const hasRealKey =
+  CHARGILY_SECRET_KEY !== "" && CHARGILY_SECRET_KEY !== PLACEHOLDER_KEY;
+
+/** Simulation de paiement : uniquement en développement local, sans clé Chargily. */
+export const isPaymentSimulationEnabled = !isProduction && !hasRealKey;
+
+const CHARGILY_BASE_URL =
+  CHARGILY_MODE === "live"
+    ? "https://pay.chargily.net/api/v2"
+    : "https://pay.chargily.net/test/api/v2";
+
+if (isProduction && !hasRealKey) {
+  console.error(
+    "[CHARGILY] CHARGILY_SECRET_KEY manquante : les paiements sont désactivés."
+  );
+}
+if (isProduction && hasRealKey && CHARGILY_MODE !== "live") {
+  console.warn(
+    "[CHARGILY] Mode TEST actif en production : aucun vrai paiement n'est prélevé. " +
+      "Mettre CHARGILY_MODE=live avant le lancement public."
+  );
+}
+
+/** Erreur levée quand le paiement n'est pas configuré en production. */
+export class PaymentNotConfiguredError extends Error {
+  constructor() {
+    super("PAYMENT_NOT_CONFIGURED");
+    this.name = "PaymentNotConfiguredError";
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Création d'un paiement                                                    */
+/* -------------------------------------------------------------------------- */
 
 interface CreateCheckoutParams {
   userId: string;
@@ -24,12 +62,19 @@ export async function createChargilyCheckout({
   successUrl,
   failureUrl,
 }: CreateCheckoutParams): Promise<{ checkoutUrl: string; isSimulated?: boolean }> {
-  // If no secret key is set yet, provide an instant test fallback so development and testing works immediately
-  if (!CHARGILY_SECRET_KEY || CHARGILY_SECRET_KEY === "your_chargily_secret_key_here") {
-    console.warn("⚠️ CHARGILY_SECRET_KEY is not configured in .env. Running in local test simulation mode.");
-    
-    // Simulate instant success redirect with mock checkout ID
-    const simulatedUrl = `${successUrl}${successUrl.includes("?") ? "&" : "?"}checkout_id=test_chk_${Date.now()}&simulated=true`;
+  if (!hasRealKey) {
+    // 🔒 La simulation n'existe qu'en développement local.
+    // En production, sans clé : on refuse, on ne donne JAMAIS le cours.
+    if (isProduction) {
+      throw new PaymentNotConfiguredError();
+    }
+
+    console.warn(
+      "⚠️ CHARGILY_SECRET_KEY absente : mode simulation (développement local uniquement)."
+    );
+    const simulatedUrl = `${successUrl}${
+      successUrl.includes("?") ? "&" : "?"
+    }checkout_id=test_chk_${Date.now()}&simulated=true`;
     return { checkoutUrl: simulatedUrl, isSimulated: true };
   }
 
@@ -37,50 +82,65 @@ export async function createChargilyCheckout({
     const response = await fetch(`${CHARGILY_BASE_URL}/checkouts`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${CHARGILY_SECRET_KEY}`,
+        Authorization: `Bearer ${CHARGILY_SECRET_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         amount: Math.round(amount),
         currency: "dzd",
-        payment_method: "edahabia", // EDAHABIA / CIB handled automatically by Chargily
+        payment_method: "edahabia",
         success_url: successUrl,
         failure_url: failureUrl,
-        metadata: {
-          userId,
-          courseId,
-          courseTitle,
-        },
+        metadata: { userId, courseId, courseTitle },
       }),
+      signal: AbortSignal.timeout(15000), // évite d'attendre indéfiniment
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Chargily API error:", response.status, errorText);
-      throw new Error(`Chargily API Error: ${response.statusText}`);
+      // On journalise côté serveur seulement, jamais renvoyé au navigateur.
+      console.error("Chargily API error:", response.status, await response.text());
+      throw new Error("CHARGILY_API_ERROR");
     }
 
     const data = await response.json();
+    if (!data?.checkout_url || typeof data.checkout_url !== "string") {
+      throw new Error("CHARGILY_INVALID_RESPONSE");
+    }
     return { checkoutUrl: data.checkout_url };
   } catch (error) {
-    console.error("Failed to create Chargily checkout:", error);
+    console.error(
+      "Failed to create Chargily checkout:",
+      error instanceof Error ? error.message : "unknown"
+    );
     throw error;
   }
 }
 
-export function verifyChargilySignature(rawBody: string, signature: string): boolean {
-  if (!CHARGILY_SECRET_KEY) return true; // In local development without keys
+/* -------------------------------------------------------------------------- */
+/*  Vérification de la signature du webhook                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Retourne true UNIQUEMENT si la signature est présente ET correcte.
+ * Sans clé configurée ou sans signature : toujours false (jamais d'exception).
+ */
+export function verifyChargilySignature(
+  rawBody: string,
+  signature: string
+): boolean {
+  if (!hasRealKey || !signature) return false;
 
   try {
-    const computedSignature = crypto
+    const computed = crypto
       .createHmac("sha256", CHARGILY_SECRET_KEY)
       .update(rawBody)
       .digest("hex");
 
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(computedSignature)
-    );
+    const received = Buffer.from(signature, "utf8");
+    const expected = Buffer.from(computed, "utf8");
+
+    if (received.length !== expected.length) return false;
+    return crypto.timingSafeEqual(received, expected);
   } catch (err) {
     console.error("Signature verification error:", err);
     return false;

@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { VideoPlayer } from "@/components/VideoPlayer";
+import { resolveVideoSrc } from "@/lib/videoStorage";
 import { revalidatePath } from "next/cache";
 
 export default async function LessonPage({
@@ -10,15 +11,17 @@ export default async function LessonPage({
 }: {
   params: Promise<{ courseId: string; lessonId: string }>;
 }) {
-  const resolvedParams = await params;
+  const { courseId, lessonId } = await params;
   const session = await getServerSession(authOptions);
-  
+
   if (!session?.user) {
-    return null;
+    redirect(`/login?callbackUrl=/courses/${courseId}/learn/${lessonId}`);
   }
 
-  const userId = (session.user as any).id;
-  const { courseId, lessonId } = resolvedParams;
+  const userId = (session.user as { id?: string }).id;
+  if (!userId) {
+    redirect(`/login?callbackUrl=/courses/${courseId}/learn/${lessonId}`);
+  }
 
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
@@ -27,8 +30,29 @@ export default async function LessonPage({
     }
   });
 
-  if (!lesson) {
+  // La leçon doit exister ET appartenir à ce cours
+  if (!lesson || lesson.chapter.courseId !== courseId) {
     notFound();
+  }
+
+  // 🔒 Contrôle d'accès : inscrit, leçon gratuite, formateur du cours ou admin
+  const [dbUser, enrollment, courseOwner] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { id: true },
+    }),
+    prisma.course.findUnique({ where: { id: courseId }, select: { instructorId: true } }),
+  ]);
+
+  const hasAccess =
+    !!enrollment ||
+    lesson.isFree ||
+    dbUser?.role === "ADMIN" ||
+    courseOwner?.instructorId === userId;
+
+  if (!hasAccess) {
+    redirect(`/courses/${courseId}/enroll`);
   }
 
   // Check if completed
@@ -46,11 +70,11 @@ export default async function LessonPage({
   // Server Action to mark complete
   async function toggleProgress() {
     "use server";
-    
+
     const existingProgress = await prisma.userProgress.findUnique({
       where: {
         userId_lessonId: {
-          userId,
+          userId: userId as string,
           lessonId
         }
       }
@@ -64,7 +88,7 @@ export default async function LessonPage({
     } else {
       await prisma.userProgress.create({
         data: {
-          userId,
+          userId: userId as string,
           lessonId,
           isCompleted: true
         }
@@ -95,21 +119,22 @@ export default async function LessonPage({
   const nextLesson = currentIndex !== -1 && currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
 
-  // Video Placeholder if null
-  const videoUrl = lesson.videoUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+  // Lien de lecture : temporaire pour les vidéos privées, direct pour les anciennes
+  const resolvedSrc = await resolveVideoSrc(lesson.videoUrl);
+  const videoUrl = resolvedSrc || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-      
+
       {/* Video Area */}
       <div style={{ padding: '1.5rem', flexShrink: 0, background: '#050505', display: 'flex', justifyContent: 'center', borderBottom: '1px solid var(--border)' }}>
         <div style={{ width: '100%', maxWidth: '1000px' }}>
-          <VideoPlayer 
-            url={videoUrl} 
+          <VideoPlayer
+            url={videoUrl}
             user={{
               name: session.user.name,
               email: session.user.email,
-              phone: (session.user as any).phone || "0555000000"
+              phone: (session.user as { phone?: string }).phone || "0555000000"
             }}
           />
         </div>
@@ -118,7 +143,7 @@ export default async function LessonPage({
       {/* Lesson Details Area */}
       <div style={{ padding: '2rem 1.5rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
-          
+
           <div>
             <div style={{ fontSize: '0.85rem', color: 'var(--brand-blue)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
               Chapitre: {lesson.chapter.title}
@@ -130,8 +155,8 @@ export default async function LessonPage({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <form action={toggleProgress}>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className={`btn ${isCompleted ? 'btn-outline' : 'btn-primary'}`}
                 style={{
                   background: isCompleted ? 'rgba(52, 211, 153, 0.1)' : 'var(--brand-green)',
@@ -158,7 +183,7 @@ export default async function LessonPage({
             </form>
 
             {nextLesson && (
-              <a 
+              <a
                 href={`/courses/${courseId}/learn/${nextLesson.id}`}
                 className="btn btn-secondary"
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem' }}
@@ -187,7 +212,7 @@ export default async function LessonPage({
         {/* Prev / Next Bottom Navigation Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
           {prevLesson ? (
-            <a 
+            <a
               href={`/courses/${courseId}/learn/${prevLesson.id}`}
               className="btn btn-outline"
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}
@@ -200,7 +225,7 @@ export default async function LessonPage({
           ) : <div />}
 
           {nextLesson && (
-            <a 
+            <a
               href={`/courses/${courseId}/learn/${nextLesson.id}`}
               className="btn btn-primary"
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}

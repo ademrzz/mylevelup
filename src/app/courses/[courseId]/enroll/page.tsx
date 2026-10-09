@@ -58,15 +58,34 @@ export default async function CourseEnrollPage({
   const isFree = !course.price || course.price === 0;
   const totalLessons = course.chapters.reduce((sum, ch) => sum + ch._count.lessons, 0);
 
-  // Server actions for enrollment
+    // Inscription gratuite : tout est revérifié côté serveur
   async function handleEnrollFree() {
     "use server";
-    await prisma.enrollment.create({
-      data: {
-        userId,
-        courseId,
-      }
+
+    const currentSession = await getServerSession(authOptions);
+    const currentUserId = (currentSession?.user as { id?: string } | undefined)?.id;
+    if (!currentUserId) {
+      redirect(`/login?callbackUrl=/courses/${courseId}/enroll`);
+    }
+
+    const freshCourse = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { price: true, isPublished: true },
     });
+
+    if (!freshCourse || !freshCourse.isPublished) {
+      throw new Error("Cours introuvable.");
+    }
+    if (freshCourse.price && freshCourse.price > 0) {
+      throw new Error("Ce cours n'est pas gratuit.");
+    }
+
+    await prisma.enrollment.upsert({
+      where: { userId_courseId: { userId: currentUserId, courseId } },
+      update: {},
+      create: { userId: currentUserId, courseId },
+    });
+
     redirect(`/courses/${courseId}/learn`);
   }
 

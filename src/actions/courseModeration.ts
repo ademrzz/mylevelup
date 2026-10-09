@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { approveCourseReview, rejectCourseReview, unpublishCourse } from "@/lib/courseReview";
 import { revalidatePath } from "next/cache";
+import { notifyCourseApproved, notifyCourseRejected } from "@/lib/notifications";
 
 export async function adminApproveCourse(courseId: string) {
   const session = await getServerSession(authOptions);
@@ -13,7 +14,7 @@ export async function adminApproveCourse(courseId: string) {
   }
 
   await approveCourseReview(courseId);
-
+  await notifyCourseApproved(courseId);
   revalidatePath("/admin/courses");
   revalidatePath("/admin");
   revalidatePath("/courses");
@@ -30,7 +31,7 @@ export async function adminRejectCourse(courseId: string, reason: string) {
   }
 
   await rejectCourseReview(courseId, reason);
-
+  await notifyCourseRejected(courseId);
   revalidatePath("/admin/courses");
   revalidatePath("/admin");
   revalidatePath("/courses");

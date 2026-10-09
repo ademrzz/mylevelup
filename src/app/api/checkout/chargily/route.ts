@@ -2,53 +2,62 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { createChargilyCheckout } from "@/lib/chargily";
+import {
+  createChargilyCheckout,
+  PaymentNotConfiguredError,
+} from "@/lib/chargily";
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string } | undefined)?.id;
 
-    if (!session?.user) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    if (!userId) {
+      return new NextResponse("Veuillez vous connecter pour payer.", { status: 401 });
     }
 
-    const userId = (session.user as any).id;
-    const body = await req.json();
-    const { courseId } = body;
-
-    if (!courseId) {
-      return new NextResponse("Missing courseId", { status: 400 });
+    let courseId: unknown;
+    try {
+      ({ courseId } = await req.json());
+    } catch {
+      return new NextResponse("Requête invalide.", { status: 400 });
     }
 
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-    });
+    if (typeof courseId !== "string" || courseId === "") {
+      return new NextResponse("Cours manquant.", { status: 400 });
+    }
+
+    const course = await prisma.course.findUnique({ where: { id: courseId } });
 
     if (!course || !course.isPublished) {
-      return new NextResponse("Course not found", { status: 404 });
+      return new NextResponse("Cours introuvable.", { status: 404 });
     }
 
     if (!course.price || course.price <= 0) {
-      return new NextResponse("Course is free, no payment needed", { status: 400 });
+      return new NextResponse("Ce cours est gratuit, aucun paiement nécessaire.", {
+        status: 400,
+      });
     }
 
-    // Check if already enrolled
     const existingEnrollment = await prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: {
-          userId,
-          courseId,
-        },
-      },
+      where: { userId_courseId: { userId, courseId } },
     });
-
     if (existingEnrollment) {
-      return new NextResponse("Already enrolled", { status: 400 });
+      return new NextResponse("Vous êtes déjà inscrit à ce cours.", { status: 400 });
     }
 
-    const appUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const successUrl = `${appUrl}/courses/${course.id}/enroll/success`;
-    const failureUrl = `${appUrl}/courses/${course.id}/enroll`;
+    // En production, l'adresse du site est obligatoire (pas de repli sur localhost)
+    const appUrl =
+      process.env.NEXTAUTH_URL ||
+      (process.env.NODE_ENV === "production" ? "" : "http://localhost:3000");
+    if (!appUrl) {
+      console.error("CHARGILY_CHECKOUT_ERROR: NEXTAUTH_URL manquante");
+      return new NextResponse("Paiement indisponible pour le moment.", { status: 503 });
+    }
+
+    const base = appUrl.replace(/\/$/, "");
+    const successUrl = `${base}/courses/${course.id}/enroll/success`;
+    const failureUrl = `${base}/courses/${course.id}/enroll`;
 
     const { checkoutUrl, isSimulated } = await createChargilyCheckout({
       userId,
@@ -59,12 +68,15 @@ export async function POST(req: Request) {
       failureUrl,
     });
 
-    return NextResponse.json({
-      checkoutUrl,
-      isSimulated: !!isSimulated,
-    });
-  } catch (error: any) {
+    return NextResponse.json({ checkoutUrl, isSimulated: !!isSimulated });
+  } catch (error) {
+    if (error instanceof PaymentNotConfiguredError) {
+      return new NextResponse("Paiement indisponible pour le moment.", { status: 503 });
+    }
     console.error("CHARGILY_CHECKOUT_ERROR:", error);
-    return new NextResponse(error.message || "Internal Server Error", { status: 500 });
+    // Message volontairement vague : pas de détails techniques pour l'utilisateur
+    return new NextResponse("Impossible de lancer le paiement. Réessayez plus tard.", {
+      status: 500,
+    });
   }
 }

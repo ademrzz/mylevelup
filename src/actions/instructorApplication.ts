@@ -4,7 +4,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-
+import {
+    notifyInstructorApplicationApproved,
+    notifyInstructorApplicationRejected,
+  } from "@/lib/notifications";
 export async function submitInstructorApplication(formData: FormData) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -113,6 +116,7 @@ export async function approveInstructorApplication(applicationId: string) {
       },
     }),
   ]);
+  await notifyInstructorApplicationApproved(app.userId);
 
   revalidatePath("/admin/users");
   revalidatePath("/admin");
@@ -135,6 +139,7 @@ export async function rejectInstructorApplication(applicationId: string, reason:
       reviewedAt: new Date(),
     },
   });
+  await notifyInstructorApplicationRejected(applicationId);
 
   revalidatePath("/admin/users");
   revalidatePath("/admin");

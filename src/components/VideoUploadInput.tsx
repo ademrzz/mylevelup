@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 interface VideoUploadInputProps {
   initialUrl?: string;
   name?: string;
   placeholder?: string;
 }
+
+const MAX_VIDEO_MB = Number(process.env.NEXT_PUBLIC_MAX_VIDEO_MB || 50);
+const ALLOWED_TYPES = ["video/mp4", "video/webm"];
 
 export function VideoUploadInput({
   initialUrl = "",
@@ -20,14 +24,20 @@ export function VideoUploadInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith("video/")) {
-      setError("Veuillez sélectionner un format vidéo valide (MP4, WebM).");
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError("Format non accepté. Utilisez une vidéo MP4 ou WebM.");
       return;
     }
 
-    // 100MB limit
-    if (file.size > 100 * 1024 * 1024) {
-      setError("Le fichier vidéo dépasse la limite de 100 Mo.");
+    if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+      setError(`Le fichier vidéo dépasse la limite de ${MAX_VIDEO_MB} Mo.`);
+      return;
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !anonKey) {
+      setError("Configuration du stockage manquante.");
       return;
     }
 
@@ -36,21 +46,32 @@ export function VideoUploadInput({
     setFileName(file.name);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", {
+      // 1. Le serveur vérifie nos droits et fabrique une autorisation d'envoi
+      const res = await fetch("/api/upload/video", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentType: file.type, size: file.size }),
       });
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || "Erreur de téléversement.");
+        throw new Error(text || "Impossible de préparer l'envoi.");
       }
 
-      const data = await res.json();
-      setVideoUrl(data.url);
+      const { bucket, path, token } = await res.json();
+
+      // 2. Le navigateur envoie la vidéo DIRECTEMENT à Supabase
+      const supabase = createClient(supabaseUrl, anonKey);
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .uploadToSignedUrl(path, token, file, { contentType: file.type });
+
+      if (uploadError) {
+        throw new Error(uploadError.message || "Échec de l'envoi de la vidéo.");
+      }
+
+      // 3. On garde seulement le chemin dans le formulaire (puis en base)
+      setVideoUrl(path);
     } catch (err: any) {
       console.error("Video upload error:", err);
       setError(err.message || "Échec du téléversement de la vidéo.");
@@ -62,11 +83,10 @@ export function VideoUploadInput({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
-        accept="video/mp4, video/webm, video/quicktime"
+        accept="video/mp4, video/webm"
         style={{ display: "none" }}
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -118,10 +138,16 @@ export function VideoUploadInput({
         </button>
       </div>
 
-      {fileName && !error && (
+      {fileName && !error && !uploading && (
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "#34d399" }}>
-          <span>✓ Vidéo locale attachée : <strong>{fileName}</strong></span>
+          <span>✓ Vidéo envoyée : <strong>{fileName}</strong></span>
         </div>
+      )}
+
+      {uploading && (
+        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+          Envoi en cours, ne fermez pas cette page...
+        </span>
       )}
 
       {error && (

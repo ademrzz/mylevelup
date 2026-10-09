@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifyWelcome } from "@/lib/notifications";
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     // Update the user
-    await prisma.user.update({
+    const verifiedUser = await prisma.user.update({
       where: { email: existingToken.identifier },
       data: { emailVerified: new Date() },
     });
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     await prisma.verificationToken.delete({
       where: { identifier_token: { identifier: email, token: code } },
     });
-
+    await notifyWelcome(email, verifiedUser.name);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("VERIFY_ERROR", error);

@@ -121,10 +121,7 @@ export default function LoginPage() {
               </div>
 
               <div className="flex flex-col gap-2 mb-2">
-                <div className="flex justify-between items-center">
-                  <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>Mot de passe</label>
-                  <Link href="/forgot-password" style={{ fontSize: "0.85rem", color: "var(--brand-blue)" }}>Oublié ?</Link>
-                </div>
+                <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>Mot de passe</label>
                 <input 
                   type="password" 
                   required

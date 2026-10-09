@@ -14,6 +14,7 @@ export default function RegisterPage() {
     name: "", 
     email: "", 
     password: "", 
+    confirmPassword: "",
     phone: "", 
     wilaya: "", 
     role: "STUDENT",
@@ -61,8 +62,19 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
+
+    if (data.password !== data.confirmPassword) {
+      setError("Les mots de passe ne correspondent pas.");
+      return;
+    }
+
+    if (data.password.length < 6) {
+      setError("Le mot de passe doit comporter au moins 6 caractères.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const res = await fetch("/api/register", {
@@ -136,8 +148,13 @@ export default function RegisterPage() {
             >
               {data.image ? (
                 <Image src={data.image} alt="Avatar" fill style={{ objectFit: "cover" }} />
+              ) : data.name ? (
+                data.name.charAt(0).toUpperCase()
               ) : (
-                data.name ? data.name.charAt(0).toUpperCase() : "👤"
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
               )}
             </div>
 
@@ -235,6 +252,19 @@ export default function RegisterPage() {
               minLength={6}
               value={data.password}
               onChange={(e) => setData({ ...data, password: e.target.value })}
+              className="input-field" 
+              placeholder="••••••••"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "#e5e7eb" }}>Confirmer le mot de passe *</label>
+            <input 
+              type="password" 
+              required
+              minLength={6}
+              value={data.confirmPassword}
+              onChange={(e) => setData({ ...data, confirmPassword: e.target.value })}
               className="input-field" 
               placeholder="••••••••"
             />

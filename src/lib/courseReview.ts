@@ -1,9 +1,17 @@
 import { prisma } from "@/lib/prisma";
+import { notifyAdminsCourseSubmitted } from "@/lib/notifications";
 
 /**
  * Marks a course as submitted for admin review
  */
 export async function submitCourseForReview(courseId: string) {
+  // On mémorise l'ancien statut pour ne prévenir les admins qu'une seule fois
+  // (évite un double email si le formateur clique deux fois).
+  const before = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { status: true },
+  });
+
   await prisma.course.update({
     where: { id: courseId },
     data: {
@@ -16,6 +24,10 @@ export async function submitCourseForReview(courseId: string) {
   await prisma.verificationToken.deleteMany({
     where: { identifier: `course_review_${courseId}` },
   });
+
+  if (before?.status !== "PENDING") {
+    await notifyAdminsCourseSubmitted(courseId);
+  }
 }
 
 /**

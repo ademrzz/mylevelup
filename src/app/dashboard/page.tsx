@@ -6,14 +6,14 @@ import Link from "next/link";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  
+
   if (!session?.user) {
     return null; // Handled by layout redirect
   }
 
   // Fetch enrollments with course details
   const userId = (session.user as any).id;
-  
+
   const enrollments = await prisma.enrollment.findMany({
     where: { userId },
     include: {
@@ -85,7 +85,7 @@ export default async function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {enrollments.map(enrollment => {
               const course = enrollment.course;
-              
+
               // Calculate total lessons and completed lessons for this course
               let totalLessons = 0;
               let completedLessons = 0;
@@ -102,10 +102,10 @@ export default async function DashboardPage() {
               const progressPercentage = totalLessons === 0 ? 0 : (completedLessons / totalLessons) * 100;
 
               return (
-                <DashboardCourseCard 
-                  key={enrollment.id} 
-                  course={course} 
-                  progressPercentage={progressPercentage} 
+                <DashboardCourseCard
+                  key={enrollment.id}
+                  course={course}
+                  progressPercentage={progressPercentage}
                 />
               );
             })}

@@ -160,8 +160,19 @@ export function TeacherApplicationSection({
       {/* Top Banner / Heading */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: isEditing ? "1.5rem" : "0.5rem" }}>
         <div style={{ maxWidth: "580px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
-            <span style={{ fontSize: "1.4rem" }}>{isRejected ? "⚠️" : "🎓"}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.35rem" }}>
+            {isRejected ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand-orange)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              </svg>
+            )}
             <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "white", margin: 0 }}>
               {isRejected 
                 ? "Candidature Enseignant non retenue" 
@@ -323,7 +334,7 @@ export function TeacherApplicationSection({
               className="btn btn-primary"
               style={{ background: "var(--gradient-orange)", padding: "0.75rem 1.75rem", fontSize: "0.9rem", fontWeight: 700 }}
             >
-              {loading ? "Envoi en cours..." : "🚀 Envoyer ma candidature à l'Admin"}
+              {loading ? "Envoi en cours..." : "Soumettre ma candidature"}
             </button>
           </div>
         </form>

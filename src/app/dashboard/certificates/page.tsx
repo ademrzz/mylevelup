@@ -118,12 +118,12 @@ export default async function CertificatesPage() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
             {completedCourses.map(({ course, totalLessons, enrollmentDate }) => (
-              <div 
-                key={course.id} 
-                className="glass" 
-                style={{ 
-                  borderRadius: '1rem', 
-                  border: '1px solid rgba(52, 211, 153, 0.3)', 
+              <div
+                key={course.id}
+                className="glass"
+                style={{
+                  borderRadius: '1rem',
+                  border: '1px solid rgba(52, 211, 153, 0.3)',
                   background: 'linear-gradient(145deg, rgba(52, 211, 153, 0.05) 0%, rgba(18, 18, 20, 0.9) 100%)',
                   padding: '1.75rem',
                   display: 'flex',
@@ -164,9 +164,9 @@ export default async function CertificatesPage() {
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     ID: {course.id.slice(-8).toUpperCase()}
                   </span>
-                  <Link 
+                  <Link
                     href={`/courses/${course.id}/learn`}
-                    className="btn btn-outline" 
+                    className="btn btn-outline"
                     style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
                   >
                     Revoir le cours
@@ -194,8 +194,8 @@ export default async function CertificatesPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {inProgressCourses.map(({ course, totalLessons, completedCount, percent }) => (
-              <div 
-                key={course.id} 
+              <div
+                key={course.id}
                 className="glass"
                 style={{ padding: '1.5rem', borderRadius: '0.75rem', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}
               >
@@ -219,7 +219,7 @@ export default async function CertificatesPage() {
                     </div>
                   </div>
 
-                  <Link 
+                  <Link
                     href={`/courses/${course.id}/learn`}
                     className="btn btn-primary"
                     style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}

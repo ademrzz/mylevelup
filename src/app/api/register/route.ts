@@ -6,10 +6,18 @@ import { sendVerificationEmail } from "@/lib/mailer";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, phone, wilaya, role, image } = await req.json();
+    const { name, email, password, confirmPassword, phone, wilaya, role, image } = await req.json();
 
     if (!name || !email || !password) {
-      return new NextResponse("Missing required fields", { status: 400 });
+      return new NextResponse("Champs obligatoires manquants.", { status: 400 });
+    }
+
+    if (confirmPassword && password !== confirmPassword) {
+      return new NextResponse("Les mots de passe ne correspondent pas.", { status: 400 });
+    }
+
+    if (password.length < 6) {
+      return new NextResponse("Le mot de passe doit comporter au moins 6 caractères.", { status: 400 });
     }
 
     const exist = await prisma.user.findUnique({

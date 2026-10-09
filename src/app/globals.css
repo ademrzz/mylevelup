@@ -473,3 +473,8 @@ p {
 
 .dashboard-course-card-inner { display: flex; flex-direction: row; align-items: center; gap: 1rem; position: relative; z-index: 20; }
 @media (max-width: 768px) { .dashboard-course-card-inner { flex-direction: column; align-items: stretch; gap: 1.5rem; } .dashboard-course-card-inner .course-card-image-container { width: 100% !important; height: 200px; } .dashboard-course-card-inner > div:last-child { padding-left: 0 !important; } }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

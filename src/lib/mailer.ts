@@ -176,3 +176,67 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
     ),
   });
 };
+/* -------------------------------------------------------------------------- */
+/*  Email de notification générique (événements de la plateforme)             */
+/* -------------------------------------------------------------------------- */
+
+export type NotificationEmail = {
+  to: string;
+  subject: string;
+  title: string;
+  /** Couleur du titre (hex). Par défaut : orange Level Up DZ. */
+  color?: string;
+  /** Texte brut : il est échappé automatiquement. */
+  intro: string;
+  /** Lignes d'information supplémentaires (texte brut, échappé). */
+  details?: string[];
+  /** Bouton optionnel : `path` est relatif au site (ex. "/dashboard"). */
+  cta?: { label: string; path: string };
+};
+
+export const sendNotificationEmail = async ({
+  to,
+  subject,
+  title,
+  color = "#fe9100",
+  intro,
+  details = [],
+  cta,
+}: NotificationEmail) => {
+  const baseUrl = getBaseUrl();
+  const ctaUrl = cta && baseUrl ? `${baseUrl}${cta.path}` : null;
+
+  devLog(`📨 [NOTIFICATION] ${subject} → ${to}`);
+
+  const detailsHtml = details
+    .map(
+      (line) =>
+        `<p style="color: #555; font-size: 14px; margin: 6px 0;">${escapeHtml(line)}</p>`
+    )
+    .join("");
+
+  const buttonHtml =
+    cta && ctaUrl
+      ? `<div style="text-align: center; margin: 25px 0;">
+          <a href="${escapeHtml(ctaUrl)}" style="background: ${color}; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 15px;">
+            ${escapeHtml(cta.label)}
+          </a>
+        </div>`
+      : "";
+
+  return deliver({
+    to,
+    fromName: "Level Up DZ",
+    subject,
+    html: emailLayout(
+      escapeHtml(title),
+      color,
+      `
+        <p style="color: #333; font-size: 16px; line-height: 1.5;">${escapeHtml(intro)}</p>
+        ${detailsHtml}
+        ${buttonHtml}
+        <p style="color: #86868b; font-size: 12px; text-align: center; margin-top: 24px;">Level Up DZ — Développez vos compétences, construisez votre avenir.</p>
+      `
+    ),
+  });
+};
