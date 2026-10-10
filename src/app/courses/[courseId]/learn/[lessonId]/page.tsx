@@ -42,12 +42,12 @@ export default async function LessonPage({
       where: { userId_courseId: { userId, courseId } },
       select: { id: true },
     }),
-    prisma.course.findUnique({ where: { id: courseId }, select: { instructorId: true } }),
+    prisma.course.findUnique({ where: { id: courseId }, select: { instructorId: true, isPublished: true } }),
   ]);
 
   const hasAccess =
     !!enrollment ||
-    lesson.isFree ||
+    (lesson.isFree && !!courseOwner?.isPublished) ||
     dbUser?.role === "ADMIN" ||
     courseOwner?.instructorId === userId;
 
@@ -67,9 +67,14 @@ export default async function LessonPage({
 
   const isCompleted = userProgress?.isCompleted || false;
 
+  // La progression n'existe que pour les inscrits (pas pour un simple aperçu)
+  const canTrackProgress = !!enrollment;
+
   // Server Action to mark complete
   async function toggleProgress() {
     "use server";
+
+    if (!canTrackProgress) return;
 
     const existingProgress = await prisma.userProgress.findUnique({
       where: {
@@ -126,6 +131,18 @@ export default async function LessonPage({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
+      {/* Bandeau d'aperçu gratuit (visiteur non inscrit) */}
+      {!canTrackProgress && (
+        <div style={{ background: 'rgba(52,211,153,0.1)', borderBottom: '1px solid rgba(52,211,153,0.3)', padding: '0.75rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <span style={{ color: '#34d399', fontWeight: 600, fontSize: '0.9rem' }}>
+            Vous regardez un aperçu gratuit. Inscrivez-vous pour accéder à toutes les leçons.
+          </span>
+          <a href={`/courses/${courseId}/enroll`} className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem' }}>
+            S'inscrire maintenant
+          </a>
+        </div>
+      )}
+
       {/* Video Area */}
       <div style={{ padding: '1.5rem', flexShrink: 0, background: '#050505', display: 'flex', justifyContent: 'center', borderBottom: '1px solid var(--border)' }}>
         <div style={{ width: '100%', maxWidth: '1000px' }}>
@@ -154,6 +171,7 @@ export default async function LessonPage({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {canTrackProgress && (
             <form action={toggleProgress}>
               <button
                 type="submit"
@@ -181,6 +199,7 @@ export default async function LessonPage({
                 )}
               </button>
             </form>
+            )}
 
             {nextLesson && (
               <a

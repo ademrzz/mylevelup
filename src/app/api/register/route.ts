@@ -6,7 +6,10 @@ import { sendVerificationEmail } from "@/lib/mailer";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, confirmPassword, phone, wilaya, role, image } = await req.json();
+    // 🔒 Le rôle n'est volontairement PAS lu depuis la requête : sinon n'importe qui
+    // pourrait s'inscrire en ADMIN. Tout nouveau compte est STUDENT ; on devient
+    // formateur via une candidature validée par un admin.
+    const { name, email, password, confirmPassword, phone, wilaya, image } = await req.json();
 
     if (!name || !email || !password) {
       return new NextResponse("Champs obligatoires manquants.", { status: 400 });
@@ -37,7 +40,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         phone: phone || null,
         wilaya: wilaya || null,
-        role: role || "STUDENT",
+        role: "STUDENT",
         image: image || null,
       },
     });

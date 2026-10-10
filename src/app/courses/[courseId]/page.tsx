@@ -60,6 +60,9 @@ export default async function CourseDetailPage({
 
   const totalLessons = course.chapters.reduce((sum, ch) => sum + ch.lessons.length, 0);
 
+  // Première leçon en aperçu gratuit (sert au bouton « Voir un aperçu gratuit »)
+  const firstFreeLesson = course.chapters.flatMap((ch) => ch.lessons).find((l) => l.isFree) ?? null;
+
   return (
     <div style={{ paddingBottom: '6rem' }}>
       {/* Hero Header Section */}
@@ -160,6 +163,16 @@ export default async function CourseDetailPage({
                   </Link>
                 )}
 
+                {!isEnrolled && firstFreeLesson && (
+                  <Link
+                    href={`/courses/${course.id}/learn/${firstFreeLesson.id}`}
+                    className="btn btn-outline"
+                    style={{ width: '100%', padding: '0.85rem', fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#34d399', borderColor: 'rgba(52,211,153,0.4)' }}
+                  >
+                    ▶ Voir un aperçu gratuit
+                  </Link>
+                )}
+
                 <p style={{ fontSize: '0.75rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                   Garantie de satisfaction de 30 jours. Accès à vie.
                 </p>
@@ -207,8 +220,14 @@ export default async function CourseDetailPage({
                 </div>
                 
                 <div style={{ padding: '0.5rem', borderTop: '1px solid var(--border)' }}>
-                  {chapter.lessons.map((lesson) => (
-                    <div key={lesson.id} className="lesson-row">
+                  {chapter.lessons.map((lesson) =>
+                    lesson.isFree ? (
+                      <Link
+                        key={lesson.id}
+                        href={`/courses/${course.id}/learn/${lesson.id}`}
+                        className="lesson-row"
+                        style={{ textDecoration: 'none', cursor: 'pointer' }}
+                      >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ color: 'var(--brand-blue)' }}>
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -228,8 +247,31 @@ export default async function CourseDetailPage({
                           Aperçu gratuit
                         </span>
                       )}
-                    </div>
-                  ))}
+                      </Link>
+                    ) : (
+                      <div key={lesson.id} className="lesson-row">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ color: 'var(--brand-blue)' }}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                            <line x1="7" y1="2" x2="7" y2="22"></line>
+                            <line x1="17" y1="2" x2="17" y2="22"></line>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                          </svg>
+                        </div>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#d1d5db' }}>
+                          {lesson.title}
+                        </span>
+                      </div>
+                      
+                      {lesson.isFree && (
+                        <span style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', color: '#34d399', background: 'rgba(52,211,153,0.1)', padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }}>
+                          Aperçu gratuit
+                        </span>
+                      )}
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             ))}

@@ -227,7 +227,7 @@ export default function RegisterPage() {
             </div>
             
             <div className="flex flex-col gap-2">
-              <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "#e5e7eb" }}>Wilaya (58 wilayas)</label>
+              <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "#e5e7eb" }}>Wilaya (69 wilayas)</label>
               <select 
                 value={data.wilaya}
                 onChange={(e) => setData({ ...data, wilaya: e.target.value })}

@@ -45,7 +45,15 @@ export function CourseSubscribersModal({
         className="hover:bg-white/10"
         title="Cliquer pour voir la liste des étudiants inscrits"
       >
-        <span>👥 {subscribers.length}</span>
+        <span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "-2px", marginRight: "4px" }}>
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          {subscribers.length}
+        </span>
         <span style={{ fontSize: "0.75rem", textDecoration: "underline", opacity: 0.85 }}>Voir</span>
       </button>
 
@@ -126,7 +134,14 @@ export function CourseSubscribersModal({
             <div style={{ padding: "1.5rem 1.75rem", overflowY: "auto", flex: 1 }}>
               {subscribers.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-muted)" }}>
-                  <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>👥</div>
+                  <div style={{ display: "inline-flex", padding: "1rem", borderRadius: "50%", background: "rgba(255,255,255,0.04)", marginBottom: "0.75rem" }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </div>
                   <p style={{ margin: 0, fontSize: "0.95rem" }}>
                     Aucun étudiant n'est encore inscrit à cette formation.
                   </p>

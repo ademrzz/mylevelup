@@ -8,6 +8,7 @@ import Image from "next/image";
 import { ImageUploadDropzone } from "@/components/ImageUploadDropzone";
 import { VideoUploadInput } from "@/components/VideoUploadInput";
 import { isCoursePendingReview, submitCourseForReview, cancelCourseReview } from "@/lib/courseReview";
+import { InstructorCourseDeleteButton } from "@/components/InstructorCourseDeleteButton";
 
 export default async function CourseEditorPage({
   params,
@@ -319,7 +320,7 @@ export default async function CourseEditorPage({
           Retour au tableau de bord
         </Link>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
           <Link 
             href={`/courses/${course.id}`} 
             target="_blank"
@@ -328,6 +329,12 @@ export default async function CourseEditorPage({
           >
             Voir la page publique ↗
           </Link>
+
+          <InstructorCourseDeleteButton 
+            courseId={course.id} 
+            courseTitle={course.title} 
+            redirectTo="/instructor" 
+          />
 
           {/* Publishing Controls: Admin has direct toggle, Teacher must submit for review */}
           {userRole === "ADMIN" ? (
@@ -788,6 +795,16 @@ export default async function CourseEditorPage({
             })}
           </div>
         )}
+      </div>
+
+      {/* Danger Zone: Delete Course */}
+      <div style={{ marginTop: "3.5rem" }}>
+        <InstructorCourseDeleteButton
+          courseId={course.id}
+          courseTitle={course.title}
+          redirectTo="/instructor"
+          variant="danger-zone"
+        />
       </div>
     </div>
   );

@@ -12,16 +12,22 @@ interface VideoPlayerProps {
   poster?: string | null;
 }
 
+const BUNNY_EMBED_PREFIX = "https://iframe.mediadelivery.net/embed/";
+
 export function VideoPlayer({ url, user, poster }: VideoPlayerProps) {
   const [watermarkPos, setWatermarkPos] = useState({ top: 20, left: 20 });
   const [videoError, setVideoError] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // Clean fallback if url is missing or placeholder
   const defaultFallback = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-  const effectiveUrl = (!url || url === "placeholder" || url.includes("example.com")) 
-    ? defaultFallback 
+  const effectiveUrl = (!url || url === "placeholder" || url.includes("example.com"))
+    ? defaultFallback
     : url;
+
+  // Vidéo Bunny Stream (lecteur intégré, adresse signée par le serveur)
+  const isBunnyEmbed = effectiveUrl.startsWith(BUNNY_EMBED_PREFIX);
 
   // Dynamic bouncing watermark logic
   useEffect(() => {
@@ -52,18 +58,79 @@ export function VideoPlayer({ url, user, poster }: VideoPlayerProps) {
     return () => cancelAnimationFrame(animationFrameId);
   }, []);
 
+  // Suivi du plein écran (on met en plein écran le CONTENEUR, pas la vidéo,
+  // pour que le filigrane reste visible)
+  useEffect(() => {
+    const onChange = () =>
+      setIsFullscreen(document.fullscreenElement === containerRef.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      el.requestFullscreen?.();
+    }
+  };
+
+  const showWatermark = !!user && (isBunnyEmbed || !videoError);
+
   return (
-    <div 
+    <div
       ref={containerRef}
       className="video-player-container relative w-full aspect-video bg-black overflow-hidden rounded-xl border border-[var(--border)]"
-      style={{ position: 'relative', width: '100%', aspectRatio: '16/9', backgroundColor: '#000000', overflow: 'hidden', borderRadius: '0.75rem', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+      style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: isFullscreen ? 'auto' : '16/9',
+        height: isFullscreen ? '100%' : undefined,
+        backgroundColor: '#000000',
+        overflow: 'hidden',
+        borderRadius: isFullscreen ? 0 : '0.75rem',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+      }}
     >
-      {/* The actual video player */}
-      {!videoError && effectiveUrl ? (
-        <video 
+      {isBunnyEmbed ? (
+        <>
+          {/* Lecteur Bunny. Pas de "allowfullscreen" : le plein écran passe par
+              notre bouton, qui garde le filigrane à l'écran. */}
+          <iframe
+            key={effectiveUrl}
+            src={effectiveUrl}
+            title="Lecteur vidéo"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            style={{ width: '100%', height: '100%', border: 0 }}
+          />
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
+            style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              zIndex: 40,
+              background: 'rgba(0,0,0,0.55)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.25)',
+              borderRadius: '0.4rem',
+              padding: '0.35rem 0.6rem',
+              fontSize: '0.75rem',
+              cursor: 'pointer'
+            }}
+          >
+            {isFullscreen ? "Quitter" : "Plein écran"}
+          </button>
+        </>
+      ) : !videoError ? (
+        <video
           key={effectiveUrl}
-          src={effectiveUrl} 
-          controls 
+          src={effectiveUrl}
+          controls
           controlsList="nodownload"
           playsInline
           onError={() => setVideoError(true)}
@@ -82,9 +149,9 @@ export function VideoPlayer({ url, user, poster }: VideoPlayerProps) {
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '360px', marginBottom: '1rem' }}>
             Impossible de charger le fichier vidéo. Veuillez réessayer ou contacter le support.
           </p>
-          <button 
-            onClick={() => setVideoError(false)} 
-            className="btn btn-secondary" 
+          <button
+            onClick={() => setVideoError(false)}
+            className="btn btn-secondary"
             style={{ fontSize: '0.85rem', padding: '0.5rem 1.25rem' }}
           >
             Réessayer
@@ -93,14 +160,14 @@ export function VideoPlayer({ url, user, poster }: VideoPlayerProps) {
       )}
 
       {/* Dynamic Watermark Overlay (Anti-Piracy) */}
-      {user && !videoError && (
-        <div 
+      {showWatermark && (
+        <div
           className="watermark-overlay"
           style={{
             position: 'absolute',
             top: `${watermarkPos.top}px`,
             left: `${watermarkPos.left}px`,
-            color: 'rgba(255, 255, 255, 0.28)', // Clear enough to deter recording, faint enough to watch
+            color: 'rgba(255, 255, 255, 0.28)',
             fontSize: '0.8rem',
             fontWeight: 700,
             textShadow: '0 1px 3px rgba(0,0,0,0.8)',
@@ -114,9 +181,9 @@ export function VideoPlayer({ url, user, poster }: VideoPlayerProps) {
             transition: 'top 0.1s linear, left 0.1s linear'
           }}
         >
-          <span>{user.name || "Étudiant"}</span>
-          <span>{user.email || ""}</span>
-          {user.phone && <span>{user.phone}</span>}
+          <span>{user?.name || "Étudiant"}</span>
+          <span>{user?.email || ""}</span>
+          {user?.phone && <span>{user.phone}</span>}
         </div>
       )}
     </div>

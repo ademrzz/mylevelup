@@ -3,6 +3,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
+import { InstructorCourseDeleteButton } from "@/components/InstructorCourseDeleteButton";
 
 export default async function InstructorDashboardPage() {
   const session = await getServerSession(authOptions);
@@ -219,13 +220,27 @@ export default async function InstructorDashboardPage() {
                             }`
                           }}
                         >
-                          {course.isPublished 
-                            ? "● En ligne" 
-                            : course.status === "PENDING"
-                            ? "⏳ En attente validation"
-                            : course.status === "REJECTED"
-                            ? "✕ Refusé"
-                            : "○ Brouillon"}
+                          {course.isPublished ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#34d399" }}></span>
+                              En ligne
+                            </span>
+                          ) : course.status === "PENDING" ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                              En attente validation
+                            </span>
+                          ) : course.status === "REJECTED" ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                              Refusé
+                            </span>
+                          ) : (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--text-muted)" }}></span>
+                              Brouillon
+                            </span>
+                          )}
                         </span>
                       </div>
 
@@ -234,8 +249,9 @@ export default async function InstructorDashboardPage() {
                       </h3>
 
                       {course.status === "REJECTED" && course.rejectionReason && (
-                        <div style={{ fontSize: "0.78rem", color: "#fca5a5", marginTop: "0.2rem", background: "rgba(239,68,68,0.1)", padding: "0.25rem 0.5rem", borderRadius: "0.35rem", display: "inline-block" }}>
-                          ⚠️ Motif du refus : {course.rejectionReason}
+                        <div style={{ fontSize: "0.78rem", color: "#fca5a5", marginTop: "0.2rem", background: "rgba(239,68,68,0.1)", padding: "0.25rem 0.5rem", borderRadius: "0.35rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                          <span>Motif du refus : {course.rejectionReason}</span>
                         </div>
                       )}
 
@@ -250,27 +266,32 @@ export default async function InstructorDashboardPage() {
                   </div>
 
                   {/* Actions */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                     <Link 
                       href={`/courses/${course.id}`} 
                       className="btn btn-outline"
-                      style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }}
+                      style={{ fontSize: "0.82rem", padding: "0.45rem 0.85rem" }}
                       target="_blank"
                     >
-                      Aperçu public
+                      Aperçu public ↗
                     </Link>
 
                     <Link 
                       href={`/instructor/courses/${course.id}`} 
                       className="btn btn-primary"
                       style={{ 
-                        fontSize: "0.85rem", 
-                        padding: "0.5rem 1.25rem",
+                        fontSize: "0.82rem", 
+                        padding: "0.45rem 1.1rem",
                         background: "var(--gradient-orange)"
                       }}
                     >
                       Gérer le cours →
                     </Link>
+
+                    <InstructorCourseDeleteButton
+                      courseId={course.id}
+                      courseTitle={course.title}
+                    />
                   </div>
                 </div>
               );

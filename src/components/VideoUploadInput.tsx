@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { createClient } from "@supabase/supabase-js";
+import * as tus from "tus-js-client";
 
 interface VideoUploadInputProps {
   initialUrl?: string;
@@ -9,48 +9,44 @@ interface VideoUploadInputProps {
   placeholder?: string;
 }
 
-const MAX_VIDEO_MB = Number(process.env.NEXT_PUBLIC_MAX_VIDEO_MB || 50);
-const ALLOWED_TYPES = ["video/mp4", "video/webm"];
+const MAX_VIDEO_MB = Number(process.env.NEXT_PUBLIC_MAX_VIDEO_MB || 5120);
+const ALLOWED_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
 export function VideoUploadInput({
   initialUrl = "",
   name = "videoUrl",
-  placeholder = "https://... ou téléversez un fichier MP4",
+  placeholder = "https://... ou téléversez un fichier vidéo",
 }: VideoUploadInputProps) {
   const [videoUrl, setVideoUrl] = useState<string>(initialUrl);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0);
   const [fileName, setFileName] = useState<string>("");
+  const [done, setDone] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("Format non accepté. Utilisez une vidéo MP4 ou WebM.");
+      setError("Format non accepté. Utilisez une vidéo MP4, WebM ou MOV.");
       return;
     }
-
     if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
       setError(`Le fichier vidéo dépasse la limite de ${MAX_VIDEO_MB} Mo.`);
       return;
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !anonKey) {
-      setError("Configuration du stockage manquante.");
-      return;
-    }
-
     setError("");
+    setDone(false);
+    setProgress(0);
     setUploading(true);
     setFileName(file.name);
 
     try {
-      // 1. Le serveur vérifie nos droits et fabrique une autorisation d'envoi
+      // 1. Le serveur vérifie nos droits et prépare l'envoi chez Bunny
       const res = await fetch("/api/upload/video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentType: file.type, size: file.size }),
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, size: file.size }),
       });
 
       if (!res.ok) {
@@ -58,23 +54,35 @@ export function VideoUploadInput({
         throw new Error(text || "Impossible de préparer l'envoi.");
       }
 
-      const { bucket, path, token } = await res.json();
+      const { libraryId, videoId, expire, signature, endpoint } = await res.json();
 
-      // 2. Le navigateur envoie la vidéo DIRECTEMENT à Supabase
-      const supabase = createClient(supabaseUrl, anonKey);
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .uploadToSignedUrl(path, token, file, { contentType: file.type });
+      // 2. Le navigateur envoie la vidéo DIRECTEMENT à Bunny, par morceaux
+      //    (reprise automatique si la connexion coupe)
+      await new Promise<void>((resolve, reject) => {
+        const upload = new tus.Upload(file, {
+          endpoint,
+          retryDelays: [0, 3000, 5000, 10000, 20000, 60000],
+          chunkSize: 16 * 1024 * 1024,
+          headers: {
+            AuthorizationSignature: signature,
+            AuthorizationExpire: String(expire),
+            VideoId: videoId,
+            LibraryId: String(libraryId),
+          },
+          metadata: { filetype: file.type, title: file.name },
+          onError: (err) => reject(err),
+          onProgress: (sent, total) => setProgress(Math.round((sent / total) * 100)),
+          onSuccess: () => resolve(),
+        });
+        upload.start();
+      });
 
-      if (uploadError) {
-        throw new Error(uploadError.message || "Échec de l'envoi de la vidéo.");
-      }
-
-      // 3. On garde seulement le chemin dans le formulaire (puis en base)
-      setVideoUrl(path);
+      // 3. On garde seulement l'identifiant dans le formulaire (puis en base)
+      setVideoUrl(`bunny:${videoId}`);
+      setDone(true);
     } catch (err: any) {
       console.error("Video upload error:", err);
-      setError(err.message || "Échec du téléversement de la vidéo.");
+      setError(err?.message || "Échec du téléversement de la vidéo.");
       setFileName("");
     } finally {
       setUploading(false);
@@ -86,11 +94,12 @@ export function VideoUploadInput({
       <input
         ref={fileInputRef}
         type="file"
-        accept="video/mp4, video/webm"
+        accept="video/mp4, video/webm, video/quicktime"
         style={{ display: "none" }}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) handleFile(file);
+          e.target.value = "";
         }}
       />
 
@@ -123,7 +132,7 @@ export function VideoUploadInput({
           {uploading ? (
             <>
               <div style={{ width: "12px", height: "12px", border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-              <span>Envoi...</span>
+              <span>{progress}%</span>
             </>
           ) : (
             <>
@@ -138,16 +147,22 @@ export function VideoUploadInput({
         </button>
       </div>
 
-      {fileName && !error && !uploading && (
-        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "#34d399" }}>
-          <span>✓ Vidéo envoyée : <strong>{fileName}</strong></span>
+      {uploading && (
+        <div>
+          <div style={{ height: "6px", borderRadius: "3px", background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+            <div style={{ width: `${progress}%`, height: "100%", background: "var(--brand-blue)", transition: "width 0.3s" }} />
+          </div>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+            Envoi de {fileName} : {progress}%. Ne fermez pas cette page.
+          </span>
         </div>
       )}
 
-      {uploading && (
-        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-          Envoi en cours, ne fermez pas cette page...
-        </span>
+      {done && !error && (
+        <div style={{ fontSize: "0.75rem", color: "#34d399" }}>
+          ✓ Vidéo envoyée : <strong>{fileName}</strong>. Elle sera lisible dans quelques minutes
+          (le temps de l&apos;encodage). N&apos;oubliez pas d&apos;enregistrer la leçon.
+        </div>
       )}
 
       {error && (

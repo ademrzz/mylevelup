@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { createClient } from "@supabase/supabase-js";
-import crypto from "crypto";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { VIDEO_BUCKET } from "@/lib/videoStorage";
+import {
+  createBunnyVideo,
+  createTusCredentials,
+  isBunnyConfigured,
+} from "@/lib/bunny";
 
-// Ce route NE reçoit PAS la vidéo : elle vérifie les droits puis fabrique une
-// autorisation d'envoi temporaire que le navigateur utilise pour déposer le
-// fichier directement dans Supabase (pas de limite de taille côté Netlify).
+// Cette route NE reçoit PAS la vidéo : elle vérifie les droits, crée la vidéo
+// chez Bunny et renvoie une autorisation d'envoi temporaire. Le navigateur
+// envoie ensuite le fichier directement à Bunny (reprise automatique).
 
-const ALLOWED_TYPES: Record<string, string> = {
-  "video/mp4": "mp4",
-  "video/webm": "webm",
-};
-
-const MAX_VIDEO_MB = Number(process.env.NEXT_PUBLIC_MAX_VIDEO_MB || 50);
+const ALLOWED_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+const MAX_VIDEO_MB = Number(process.env.NEXT_PUBLIC_MAX_VIDEO_MB || 5120);
 
 export async function POST(req: Request) {
   try {
@@ -28,23 +26,21 @@ export async function POST(req: Request) {
     // Seuls les formateurs et admins peuvent envoyer des vidéos
     const user = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, role: true },
+      select: { role: true },
     });
     if (!user || (user.role !== "INSTRUCTOR" && user.role !== "ADMIN")) {
       return new NextResponse("Accès refusé", { status: 403 });
     }
 
-    let body: { contentType?: unknown; size?: unknown };
+    let body: { fileName?: unknown; contentType?: unknown; size?: unknown };
     try {
       body = await req.json();
     } catch {
       return new NextResponse("Requête invalide.", { status: 400 });
     }
 
-    const ext =
-      typeof body.contentType === "string" ? ALLOWED_TYPES[body.contentType] : undefined;
-    if (!ext) {
-      return new NextResponse("Format non accepté. Vidéos : MP4 ou WebM.", { status: 400 });
+    if (typeof body.contentType !== "string" || !ALLOWED_TYPES.includes(body.contentType)) {
+      return new NextResponse("Format non accepté. Vidéos : MP4, WebM ou MOV.", { status: 400 });
     }
 
     const size = Number(body.size);
@@ -57,30 +53,18 @@ export async function POST(req: Request) {
       });
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl || !serviceKey) {
-      console.error("VIDEO_UPLOAD_CONFIG_ERROR: SUPABASE_URL ou clé secrète manquante");
-      return new NextResponse("Stockage non configuré.", { status: 500 });
+    if (!isBunnyConfigured()) {
+      console.error("VIDEO_UPLOAD_CONFIG_ERROR: variables BUNNY_STREAM_* manquantes");
+      return new NextResponse("Stockage vidéo non configuré.", { status: 500 });
     }
 
-    const storage = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    const rawTitle = typeof body.fileName === "string" ? body.fileName : "";
+    const title = rawTitle.replace(/[\u0000-\u001f]/g, "").trim().slice(0, 120) || "Vidéo sans titre";
 
-    // Chemin aléatoire, rangé par formateur
-    const path = `videos/${user.id}/${Date.now()}_${crypto.randomBytes(8).toString("hex")}.${ext}`;
-
-    const { data, error } = await storage.storage
-      .from(VIDEO_BUCKET)
-      .createSignedUploadUrl(path);
-
-    if (error || !data) {
-      console.error("VIDEO_SIGNED_UPLOAD_ERROR:", error?.message);
-      return new NextResponse("Impossible de préparer l'envoi.", { status: 500 });
-    }
-
-    return NextResponse.json({ bucket: VIDEO_BUCKET, path: data.path, token: data.token });
+    const videoId = await createBunnyVideo(title);
+    return NextResponse.json(createTusCredentials(videoId));
   } catch (error) {
-    console.error("VIDEO_UPLOAD_ERROR:", error);
-    return new NextResponse("Erreur interne.", { status: 500 });
+    console.error("VIDEO_UPLOAD_ERROR:", error instanceof Error ? error.message : error);
+    return new NextResponse("Impossible de préparer l'envoi.", { status: 500 });
   }
 }

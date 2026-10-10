@@ -14,6 +14,7 @@ interface LearnTheaterViewProps {
   courseTitle: string;
   chapters: ChapterWithLessons[];
   completedLessonIds: string[];
+  hasFullAccess: boolean;
   children: React.ReactNode;
 }
 
@@ -22,6 +23,7 @@ export function LearnTheaterView({
   courseTitle,
   chapters,
   completedLessonIds,
+  hasFullAccess,
   children,
 }: LearnTheaterViewProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -170,6 +172,7 @@ export function LearnTheaterView({
             courseId={courseId} 
             chapters={chapters} 
             completedLessonIds={completedLessonIds} 
+            hasFullAccess={hasFullAccess}
           />
         </aside>
 
@@ -220,6 +223,7 @@ export function LearnTheaterView({
               courseId={courseId} 
               chapters={chapters} 
               completedLessonIds={completedLessonIds} 
+            hasFullAccess={hasFullAccess}
               onSelectLesson={() => setIsMobileDrawerOpen(false)}
             />
           </div>

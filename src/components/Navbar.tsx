@@ -19,7 +19,7 @@ export default function Navbar() {
   const isAdmin = role === "ADMIN";
   const isInstructor = role === "INSTRUCTOR" || isAdmin;
 
-  // Fermer le menu deroulant au clic exterieur ou avec Echap
+  // Fermer le menu déroulant au clic extérieur ou touche Échap
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -40,7 +40,7 @@ export default function Navbar() {
     };
   }, []);
 
-  // Fermer les menus lors d'un changement de page
+  // Fermer les menus lors d'un changement de route
   useEffect(() => {
     setIsProfileOpen(false);
     setIsMobileMenuOpen(false);
@@ -55,194 +55,153 @@ export default function Navbar() {
     return name.slice(0, 2).toUpperCase();
   };
 
+  const isCoursesActive = pathname.startsWith("/courses");
+
   return (
-    <nav
-      className="glass w-full"
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        borderBottom: "1px solid var(--border)",
-        background: "var(--surface)",
-        backdropFilter: "blur(20px)",
-      }}
-    >
-      <div 
-        className="container"
-        style={{ 
-          height: "72px", 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "space-between",
-          padding: "0 1.5rem"
-        }}
-      >
-        {/* Section Gauche : Logo et Liens Principaux */}
-        <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
-          <Link 
-            href="/" 
-            style={{ display: "flex", alignItems: "center" }} 
-            aria-label="Level Up DZ Accueil"
-          >
-            {/* Logo Desktop */}
-            <div className="hidden-mobile" style={{ alignItems: "center" }}>
+    <header className="site-header">
+      <div className="site-header-inner">
+        {/* =========================================================
+            1. GAUCHE : Logo (Aligne a gauche, flex: 1 1 0%)
+           ========================================================= */}
+        <div className="header-col-left">
+          <Link href="/" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }} aria-label="Level Up DZ Accueil">
+            {/* Desktop Brand Logo */}
+            <div className="desktop-only" style={{ alignItems: "center" }}>
               <Image 
                 src={logoLong} 
                 alt="Level Up DZ" 
-                height={46}
-                width={120}
-                style={{ height: "46px", width: "auto", objectFit: "contain" }}
+                height={38}
+                width={125}
+                style={{ height: "38px", width: "auto", objectFit: "contain" }}
                 priority
               />
             </div>
-            {/* Logo Mobile */}
-            <div className="show-mobile" style={{ alignItems: "center" }}>
+            {/* Mobile Brand Logo */}
+            <div className="mobile-only" style={{ alignItems: "center" }}>
               <Image 
                 src={logoShort} 
                 alt="Level Up DZ" 
-                height={36}
-                width={36}
-                style={{ height: "36px", width: "auto", objectFit: "contain" }}
+                height={32}
+                width={32}
+                style={{ height: "32px", width: "auto", objectFit: "contain" }}
                 priority
               />
             </div>
           </Link>
-
-          {/* Liens de Navigation Desktop (Espacement bien defini) */}
-          <div 
-            className="hidden-mobile" 
-            style={{ 
-              display: "flex",
-              alignItems: "center", 
-              gap: "1.25rem"
-            }}
-          >
-            <Link 
-              href="/courses" 
-              style={{ 
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.5rem 0.9rem",
-                borderRadius: "0.5rem",
-                fontSize: "0.92rem", 
-                fontWeight: 500,
-                color: pathname.startsWith("/courses") ? "var(--foreground)" : "var(--text-muted)",
-                background: pathname.startsWith("/courses") ? "var(--surface-hover)" : "transparent",
-                transition: "all 0.15s ease" 
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-              </svg>
-              <span>Catalogue des cours</span>
-            </Link>
-            
-            {(!session || role === "STUDENT") && (
-              <Link 
-                href={session ? "/dashboard/profile" : "/register"}
-                style={{ 
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.45rem",
-                  padding: "0.45rem 0.95rem",
-                  borderRadius: "0.5rem",
-                  fontSize: "0.88rem",
-                  fontWeight: 600,
-                  color: "var(--brand-orange)",
-                  background: "rgba(254, 145, 0, 0.08)",
-                  border: "1px solid rgba(254, 145, 0, 0.28)",
-                  transition: "all 0.15s ease"
-                }}
-              >
-                <span>Devenir formateur</span>
-              </Link>
-            )}
-          </div>
         </div>
 
-        {/* Section Droite : Actions utilisateur Desktop */}
-        <div className="hidden-mobile" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          {session ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              {/* Raccourci Espace Administration */}
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    fontSize: "0.82rem",
-                    fontWeight: 600,
-                    letterSpacing: "0.01em",
-                    color: "#c084fc",
-                    background: pathname.startsWith("/admin") 
-                      ? "rgba(168, 85, 247, 0.2)" 
-                      : "rgba(168, 85, 247, 0.09)",
-                    border: "1px solid rgba(168, 85, 247, 0.3)",
-                    padding: "0.45rem 0.85rem",
-                    borderRadius: "0.5rem",
-                    transition: "all 0.15s ease"
-                  }}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
-                  <span>Administration</span>
-                </Link>
-              )}
+        {/* =========================================================
+            2. CENTRE : Catalogue des cours (Centre au milieu, flex: 0 0 auto)
+           ========================================================= */}
+        <div className="header-col-center">
+          <Link 
+            href="/courses" 
+            className={`header-catalog-pill ${isCoursesActive ? "active" : ""}`}
+          >
+            <svg 
+              width="15" 
+              height="15" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2.2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              style={{ color: isCoursesActive ? "#fe9100" : "var(--brand-orange)", flexShrink: 0 }}
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+            <span className="desktop-only">Catalogue des cours</span>
+            <span className="mobile-only">Catalogue</span>
+          </Link>
+        </div>
 
-              {/* Raccourci Studio Formateur */}
+        {/* =========================================================
+            3. DROITE : Actions & Profil (Aligne a droite, flex: 1 1 0%)
+           ========================================================= */}
+        <div className="header-col-right">
+          {session ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              {/* Raccourci Studio Formateur (Desktop) */}
               {isInstructor && (
                 <Link
                   href="/instructor"
+                  className="desktop-only"
                   style={{
-                    display: "inline-flex",
                     alignItems: "center",
-                    gap: "0.5rem",
+                    gap: "0.4rem",
                     fontSize: "0.82rem",
                     fontWeight: 600,
-                    letterSpacing: "0.01em",
+                    textDecoration: "none",
                     color: "var(--brand-orange)",
                     background: pathname.startsWith("/instructor") 
-                      ? "rgba(254, 145, 0, 0.18)" 
-                      : "rgba(254, 145, 0, 0.08)",
+                      ? "rgba(254, 145, 0, 0.16)" 
+                      : "rgba(254, 145, 0, 0.06)",
                     border: "1px solid rgba(254, 145, 0, 0.28)",
-                    padding: "0.45rem 0.85rem",
+                    padding: "0.38rem 0.75rem",
                     borderRadius: "0.5rem",
                     transition: "all 0.15s ease"
                   }}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                     <line x1="8" y1="21" x2="16" y2="21" />
                     <line x1="12" y1="17" x2="12" y2="21" />
                   </svg>
-                  <span>Studio Formateur</span>
+                  <span>Studio</span>
                 </Link>
               )}
 
-              {/* Lien Mes cours pour apprenant */}
+              {/* Raccourci Espace Administration (Desktop) */}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="desktop-only"
+                  style={{
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    color: "#c084fc",
+                    background: pathname.startsWith("/admin") 
+                      ? "rgba(168, 85, 247, 0.18)" 
+                      : "rgba(168, 85, 247, 0.08)",
+                    border: "1px solid rgba(168, 85, 247, 0.28)",
+                    padding: "0.38rem 0.75rem",
+                    borderRadius: "0.5rem",
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  <span>Admin</span>
+                </Link>
+              )}
+
+              {/* Lien Mes cours (Desktop) */}
               <Link
                 href="/dashboard"
+                className="desktop-only"
                 style={{
-                  display: "inline-flex",
                   alignItems: "center",
-                  fontSize: "0.9rem",
+                  fontSize: "0.86rem",
                   fontWeight: 500,
-                  color: pathname === "/dashboard" ? "var(--foreground)" : "var(--text-muted)",
-                  padding: "0.45rem 0.85rem",
+                  textDecoration: "none",
+                  color: pathname === "/dashboard" ? "white" : "#9ca3af",
+                  padding: "0.38rem 0.65rem",
                   borderRadius: "0.5rem",
-                  background: pathname === "/dashboard" ? "var(--surface-hover)" : "transparent",
-                  transition: "all 0.15s ease"
+                  transition: "color 0.15s ease"
                 }}
               >
                 Mes cours
               </Link>
 
-              {/* Bouton Profil & Menu Deroulant */}
+              {/* Menu Profil Utilisateur */}
               <div ref={dropdownRef} style={{ position: "relative" }}>
                 <button
                   type="button"
@@ -252,20 +211,20 @@ export default function Navbar() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "0.6rem",
-                    background: isProfileOpen ? "var(--surface-hover)" : "transparent",
-                    border: "1px solid " + (isProfileOpen ? "var(--border)" : "rgba(255, 255, 255, 0.1)"),
-                    padding: "0.3rem 0.7rem 0.3rem 0.35rem",
+                    gap: "0.45rem",
+                    background: isProfileOpen ? "rgba(255, 255, 255, 0.08)" : "rgba(255, 255, 255, 0.03)",
+                    border: "1px solid " + (isProfileOpen ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.09)"),
+                    padding: "0.22rem 0.55rem 0.22rem 0.25rem",
                     borderRadius: "9999px",
                     cursor: "pointer",
                     transition: "all 0.2s ease"
                   }}
                 >
-                  {/* Avatar utilisateur */}
+                  {/* Avatar */}
                   <div
                     style={{
-                      width: "34px",
-                      height: "34px",
+                      width: "30px",
+                      height: "30px",
                       borderRadius: "50%",
                       overflow: "hidden",
                       background: "linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-blue) 100%)",
@@ -273,9 +232,8 @@ export default function Navbar() {
                       alignItems: "center",
                       justifyContent: "center",
                       color: "white",
-                      fontSize: "0.84rem",
+                      fontSize: "0.8rem",
                       fontWeight: 700,
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
                       flexShrink: 0
                     }}
                   >
@@ -291,23 +249,23 @@ export default function Navbar() {
                   </div>
 
                   <span
+                    className="desktop-only"
                     style={{
-                      fontSize: "0.88rem",
+                      fontSize: "0.84rem",
                       fontWeight: 600,
-                      color: "var(--foreground)",
-                      maxWidth: "130px",
+                      color: "white",
+                      maxWidth: "100px",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap"
                     }}
                   >
-                    {session.user?.name || "Mon compte"}
+                    {session.user?.name || "Compte"}
                   </span>
 
-                  {/* Fleche chevron */}
                   <svg
-                    width="14"
-                    height="14"
+                    width="12"
+                    height="12"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -315,7 +273,7 @@ export default function Navbar() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     style={{
-                      color: "var(--text-muted)",
+                      color: "#9ca3af",
                       transform: isProfileOpen ? "rotate(180deg)" : "rotate(0deg)",
                       transition: "transform 0.2s ease"
                     }}
@@ -324,54 +282,52 @@ export default function Navbar() {
                   </svg>
                 </button>
 
-                {/* Panneau Flottant du Menu Deroulant */}
+                {/* Dropdown Floating Menu */}
                 {isProfileOpen && (
                   <div
                     style={{
                       position: "absolute",
                       right: 0,
                       top: "calc(100% + 8px)",
-                      width: "270px",
-                      background: "var(--surface-solid)",
-                      border: "1px solid var(--border)",
+                      width: "260px",
+                      background: "#0c111d",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
                       borderRadius: "0.85rem",
-                      boxShadow: "0 16px 36px rgba(0, 0, 0, 0.28)",
+                      boxShadow: "0 18px 40px rgba(0, 0, 0, 0.5)",
                       backdropFilter: "blur(20px)",
                       padding: "0.5rem",
-                      zIndex: 60,
+                      zIndex: 120,
                       animation: "fadeIn 0.15s ease-out"
                     }}
                   >
-                    {/* Carte Identite Utilisateur */}
-                    <div style={{ padding: "0.75rem 0.85rem 0.85rem", borderBottom: "1px solid var(--border)" }}>
-                      <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem", color: "var(--foreground)" }}>
+                    {/* User Card */}
+                    <div style={{ padding: "0.75rem 0.85rem 0.85rem", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: "0.92rem", color: "white" }}>
                         {session.user?.name || "Utilisateur"}
                       </p>
-                      <p style={{ margin: "0.2rem 0 0.5rem", fontSize: "0.8rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p style={{ margin: "0.2rem 0 0.5rem", fontSize: "0.78rem", color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {session.user?.email}
                       </p>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                        <span
-                          style={{
-                            fontSize: "0.72rem",
-                            fontWeight: 700,
-                            letterSpacing: "0.04em",
-                            padding: "0.15rem 0.55rem",
-                            borderRadius: "9999px",
-                            textTransform: "uppercase",
-                            ...(isAdmin
-                              ? { background: "rgba(168, 85, 247, 0.15)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.3)" }
-                              : isInstructor
-                              ? { background: "rgba(254, 145, 0, 0.15)", color: "var(--brand-orange)", border: "1px solid rgba(254, 145, 0, 0.3)" }
-                              : { background: "rgba(0, 160, 220, 0.15)", color: "var(--brand-blue)", border: "1px solid rgba(0, 160, 220, 0.3)" })
-                          }}
-                        >
-                          {isAdmin ? "Administrateur" : isInstructor ? "Formateur Officiel" : "Apprenant"}
-                        </span>
-                      </div>
+                      <span
+                        style={{
+                          fontSize: "0.7rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.04em",
+                          padding: "0.15rem 0.55rem",
+                          borderRadius: "9999px",
+                          textTransform: "uppercase",
+                          ...(isAdmin
+                            ? { background: "rgba(168, 85, 247, 0.15)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.3)" }
+                            : isInstructor
+                            ? { background: "rgba(254, 145, 0, 0.15)", color: "var(--brand-orange)", border: "1px solid rgba(254, 145, 0, 0.3)" }
+                            : { background: "rgba(0, 160, 220, 0.15)", color: "var(--brand-blue)", border: "1px solid rgba(0, 160, 220, 0.3)" })
+                        }}
+                      >
+                        {isAdmin ? "Administrateur" : isInstructor ? "Formateur Officiel" : "Apprenant"}
+                      </span>
                     </div>
 
-                    {/* Liens Internes du Menu */}
+                    {/* Links */}
                     <div style={{ padding: "0.4rem 0" }}>
                       <Link
                         href="/dashboard"
@@ -380,18 +336,19 @@ export default function Navbar() {
                           display: "flex",
                           alignItems: "center",
                           gap: "0.65rem",
-                          padding: "0.6rem 0.85rem",
-                          fontSize: "0.88rem",
-                          color: "var(--foreground)",
+                          padding: "0.55rem 0.85rem",
+                          fontSize: "0.86rem",
+                          color: "#e5e7eb",
+                          textDecoration: "none",
                           borderRadius: "0.5rem",
                           transition: "background 0.15s ease"
                         }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand-blue)" }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand-orange)" }}>
                           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                         </svg>
-                        <span>Mes formations</span>
+                        <span>Mes cours</span>
                       </Link>
 
                       <Link
@@ -401,18 +358,19 @@ export default function Navbar() {
                           display: "flex",
                           alignItems: "center",
                           gap: "0.65rem",
-                          padding: "0.6rem 0.85rem",
-                          fontSize: "0.88rem",
-                          color: "var(--foreground)",
+                          padding: "0.55rem 0.85rem",
+                          fontSize: "0.86rem",
+                          color: "#e5e7eb",
+                          textDecoration: "none",
                           borderRadius: "0.5rem",
                           transition: "background 0.15s ease"
                         }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text-muted)" }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand-blue)" }}>
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                           <circle cx="12" cy="7" r="4" />
                         </svg>
-                        <span>Profil & Parametres</span>
+                        <span>Profil & Paramètres</span>
                       </Link>
 
                       <Link
@@ -422,21 +380,21 @@ export default function Navbar() {
                           display: "flex",
                           alignItems: "center",
                           gap: "0.65rem",
-                          padding: "0.6rem 0.85rem",
-                          fontSize: "0.88rem",
-                          color: "var(--foreground)",
+                          padding: "0.55rem 0.85rem",
+                          fontSize: "0.86rem",
+                          color: "#e5e7eb",
+                          textDecoration: "none",
                           borderRadius: "0.5rem",
                           transition: "background 0.15s ease"
                         }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand-green)" }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand-green)" }}>
                           <circle cx="12" cy="8" r="7" />
                           <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
                         </svg>
                         <span>Mes certificats</span>
                       </Link>
 
-                      {/* Studio Formateur dans le menu */}
                       {isInstructor && (
                         <Link
                           href="/instructor"
@@ -445,23 +403,23 @@ export default function Navbar() {
                             display: "flex",
                             alignItems: "center",
                             gap: "0.65rem",
-                            padding: "0.6rem 0.85rem",
-                            fontSize: "0.88rem",
-                            color: "var(--foreground)",
+                            padding: "0.55rem 0.85rem",
+                            fontSize: "0.86rem",
+                            color: "#e5e7eb",
+                            textDecoration: "none",
                             borderRadius: "0.5rem",
                             transition: "background 0.15s ease"
                           }}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand-orange)" }}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand-orange)" }}>
                             <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                             <line x1="8" y1="21" x2="16" y2="21" />
                             <line x1="12" y1="17" x2="12" y2="21" />
                           </svg>
-                          <span>Espace Formateur</span>
+                          <span>Studio Formateur</span>
                         </Link>
                       )}
 
-                      {/* Portail Admin dans le menu */}
                       {isAdmin && (
                         <Link
                           href="/admin"
@@ -470,14 +428,15 @@ export default function Navbar() {
                             display: "flex",
                             alignItems: "center",
                             gap: "0.65rem",
-                            padding: "0.6rem 0.85rem",
-                            fontSize: "0.88rem",
-                            color: "var(--foreground)",
+                            padding: "0.55rem 0.85rem",
+                            fontSize: "0.86rem",
+                            color: "#e5e7eb",
+                            textDecoration: "none",
                             borderRadius: "0.5rem",
                             transition: "background 0.15s ease"
                           }}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#c084fc" }}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#c084fc" }}>
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                           </svg>
                           <span>Espace Administration</span>
@@ -485,8 +444,8 @@ export default function Navbar() {
                       )}
                     </div>
 
-                    {/* Action Deconnexion */}
-                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.4rem" }}>
+                    {/* Déconnexion */}
+                    <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "0.4rem" }}>
                       <button
                         type="button"
                         onClick={() => {
@@ -498,8 +457,8 @@ export default function Navbar() {
                           display: "flex",
                           alignItems: "center",
                           gap: "0.65rem",
-                          padding: "0.6rem 0.85rem",
-                          fontSize: "0.88rem",
+                          padding: "0.55rem 0.85rem",
+                          fontSize: "0.86rem",
                           color: "#ef4444",
                           background: "transparent",
                           border: "none",
@@ -509,273 +468,230 @@ export default function Navbar() {
                           transition: "background 0.15s ease"
                         }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                           <polyline points="16 17 21 12 16 7" />
                           <line x1="21" y1="12" x2="9" y2="12" />
                         </svg>
-                        <span>Deconnexion</span>
+                        <span>Déconnexion</span>
                       </button>
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Mobile Hamburger toggle (uniquement sur mobile) */}
+              <button 
+                type="button"
+                className="mobile-only"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Menu"
+                style={{ 
+                  background: "transparent", 
+                  border: "none", 
+                  cursor: "pointer", 
+                  padding: "0.35rem", 
+                  color: "white", 
+                  flexDirection: "column", 
+                  gap: "4px" 
+                }}
+              >
+                <div style={{ width: "20px", height: "2px", background: "currentColor", borderRadius: "1px" }} />
+                <div style={{ width: "20px", height: "2px", background: "currentColor", borderRadius: "1px" }} />
+                <div style={{ width: "20px", height: "2px", background: "currentColor", borderRadius: "1px" }} />
+              </button>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+              {/* Devenir formateur (Desktop only) */}
+              <Link 
+                href="/dashboard/profile"
+                className="desktop-only"
+                style={{ 
+                  fontSize: "0.86rem",
+                  fontWeight: 500,
+                  color: "#9ca3af",
+                  textDecoration: "none",
+                  transition: "color 0.15s ease"
+                }}
+              >
+                Devenir formateur
+              </Link>
+
+              {/* Connexion (Desktop only) */}
               <Link 
                 href="/login" 
-                className="btn btn-secondary" 
+                className="desktop-only"
                 style={{ 
-                  padding: "0.45rem 1.1rem", 
-                  fontSize: "0.88rem", 
-                  fontWeight: 500 
+                  padding: "0.4rem 0.85rem", 
+                  fontSize: "0.85rem", 
+                  fontWeight: 600,
+                  color: "#f3f4f6",
+                  textDecoration: "none",
+                  borderRadius: "0.55rem",
+                  background: "transparent",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  transition: "all 0.15s ease"
                 }}
               >
                 Connexion
               </Link>
+
+              {/* S'inscrire (Visible Desktop & Mobile) */}
               <Link 
                 href="/register" 
-                className="btn btn-primary" 
                 style={{ 
-                  padding: "0.45rem 1.15rem", 
-                  fontSize: "0.88rem", 
-                  fontWeight: 600 
+                  padding: "0.42rem 1.15rem", 
+                  fontSize: "0.86rem", 
+                  fontWeight: 700,
+                  color: "white",
+                  textDecoration: "none",
+                  borderRadius: "0.55rem",
+                  background: "linear-gradient(135deg, #fe9100 0%, #ea580c 100%)",
+                  boxShadow: "0 2px 14px rgba(254, 145, 0, 0.35)",
+                  border: "none",
+                  transition: "all 0.15s ease"
                 }}
               >
-                S inscrire
+                S'inscrire
               </Link>
+
+              {/* Mobile Hamburger toggle (uniquement sur mobile) */}
+              <button 
+                type="button"
+                className="mobile-only"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Menu"
+                style={{ 
+                  background: "transparent", 
+                  border: "none", 
+                  cursor: "pointer", 
+                  padding: "0.35rem", 
+                  color: "white", 
+                  flexDirection: "column", 
+                  gap: "4px" 
+                }}
+              >
+                <div style={{ width: "20px", height: "2px", background: "currentColor", borderRadius: "1px" }} />
+                <div style={{ width: "20px", height: "2px", background: "currentColor", borderRadius: "1px" }} />
+                <div style={{ width: "20px", height: "2px", background: "currentColor", borderRadius: "1px" }} />
+              </button>
             </div>
           )}
         </div>
-
-        {/* Bouton Hamburger Mobile */}
-        <button 
-          className="show-mobile"
-          style={{ 
-            background: "transparent", 
-            border: "none", 
-            cursor: "pointer", 
-            padding: "0.5rem",
-            color: "var(--foreground)",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: "5px"
-          }}
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label="Menu"
-        >
-          <div 
-            style={{ 
-              width: "22px", 
-              height: "2px", 
-              background: "currentColor", 
-              transition: "all 0.25s ease", 
-              transform: isMobileMenuOpen ? "rotate(45deg) translate(4px, 4px)" : "none" 
-            }} 
-          />
-          <div 
-            style={{ 
-              width: "22px", 
-              height: "2px", 
-              background: "currentColor", 
-              transition: "all 0.25s ease", 
-              opacity: isMobileMenuOpen ? 0 : 1 
-            }} 
-          />
-          <div 
-            style={{ 
-              width: "22px", 
-              height: "2px", 
-              background: "currentColor", 
-              transition: "all 0.25s ease", 
-              transform: isMobileMenuOpen ? "rotate(-45deg) translate(4px, -4px)" : "none" 
-            }} 
-          />
-        </button>
       </div>
 
-      {/* Menu Tiroir Mobile */}
+      {/* =========================================================
+          TIROIR MOBILE FLUIDE
+         ========================================================= */}
       {isMobileMenuOpen && (
         <div 
-          className="mobile-menu"
           style={{
-            padding: "1.25rem 1.5rem 2rem",
-            background: "var(--surface-solid)",
-            borderBottom: "1px solid var(--border)",
-            boxShadow: "var(--shadow-lg)"
+            padding: "1rem 1.25rem 1.5rem",
+            background: "#080c15",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem"
           }}
         >
           {session ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              {/* Entete Utilisateur */}
-              <div 
-                style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  gap: "0.85rem", 
-                  paddingBottom: "1rem", 
-                  borderBottom: "1px solid var(--border)" 
-                }}
-              >
-                <div
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-blue) 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    fontWeight: 700,
-                    fontSize: "0.95rem"
-                  }}
-                >
-                  {getUserInitials(session.user?.name)}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--foreground)" }}>
-                    {session.user?.name || "Utilisateur"}
-                  </div>
-                  <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                    {session.user?.email}
-                  </div>
-                </div>
+            <>
+              <div style={{ fontSize: "0.85rem", color: "#9ca3af", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                Connecté en tant que <strong style={{ color: "white" }}>{session.user?.name}</strong>
               </div>
-
-              {/* Liens de navigation */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                <Link 
-                  href="/courses" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ padding: "0.6rem 0", fontWeight: 500, color: "var(--foreground)", fontSize: "0.95rem" }}
-                >
-                  Catalogue des cours
-                </Link>
-
-                <Link 
-                  href="/dashboard" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ padding: "0.6rem 0", fontWeight: 500, color: "var(--foreground)", fontSize: "0.95rem" }}
-                >
-                  Mes cours
-                </Link>
-
-                <Link 
-                  href="/dashboard/profile" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ padding: "0.6rem 0", fontWeight: 500, color: "var(--foreground)", fontSize: "0.95rem" }}
-                >
-                  Profil & Parametres
-                </Link>
-
-                <Link 
-                  href="/dashboard/certificates" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ padding: "0.6rem 0", fontWeight: 500, color: "var(--foreground)", fontSize: "0.95rem" }}
-                >
-                  Mes certificats
-                </Link>
-
-                {role === "STUDENT" && (
-                  <Link 
-                    href="/dashboard/profile" 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    style={{ padding: "0.6rem 0", fontWeight: 600, color: "var(--brand-orange)", fontSize: "0.95rem" }}
-                  >
-                    Devenir formateur
-                  </Link>
-                )}
-              </div>
-
-              {/* Portails specifiques */}
-              {(isInstructor || isAdmin) && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border)" }}>
-                  {isInstructor && (
-                    <Link
-                      href="/instructor"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="btn btn-secondary"
-                      style={{ 
-                        justifyContent: "center", 
-                        padding: "0.7rem", 
-                        color: "var(--brand-orange)", 
-                        borderColor: "rgba(254,145,0,0.3)" 
-                      }}
-                    >
-                      Studio Formateur
-                    </Link>
-                  )}
-
-                  {isAdmin && (
-                    <Link
-                      href="/admin"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="btn btn-secondary"
-                      style={{ 
-                        justifyContent: "center", 
-                        padding: "0.7rem", 
-                        color: "#c084fc", 
-                        borderColor: "rgba(168,85,247,0.35)" 
-                      }}
-                    >
-                      Administration
-                    </Link>
-                  )}
-                </div>
-              )}
-
-              {/* Deconnexion */}
-              <button 
-                onClick={() => { 
-                  setIsMobileMenuOpen(false); 
-                  signOut(); 
-                }} 
-                className="btn btn-outline"
-                style={{ marginTop: "0.5rem", width: "100%", justifyContent: "center" }}
-              >
-                Deconnexion
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <Link 
                 href="/courses" 
                 onClick={() => setIsMobileMenuOpen(false)}
-                style={{ padding: "0.5rem 0", fontWeight: 500, color: "var(--foreground)" }}
+                style={{ padding: "0.4rem 0", color: isCoursesActive ? "#fe9100" : "white", fontWeight: 600, fontSize: "0.92rem" }}
               >
                 Catalogue des cours
               </Link>
               <Link 
-                href="/register" 
+                href="/dashboard" 
                 onClick={() => setIsMobileMenuOpen(false)}
-                style={{ padding: "0.5rem 0", fontWeight: 500, color: "var(--text-muted)" }}
+                style={{ padding: "0.4rem 0", color: "#d1d5db", fontSize: "0.9rem" }}
+              >
+                Mes cours
+              </Link>
+              <Link 
+                href="/dashboard/profile" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ padding: "0.4rem 0", color: "#d1d5db", fontSize: "0.9rem" }}
+              >
+                Profil & Paramètres
+              </Link>
+              <Link 
+                href="/dashboard/certificates" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ padding: "0.4rem 0", color: "#d1d5db", fontSize: "0.9rem" }}
+              >
+                Mes certificats
+              </Link>
+              {isInstructor && (
+                <Link 
+                  href="/instructor" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  style={{ padding: "0.4rem 0", color: "var(--brand-orange)", fontWeight: 600, fontSize: "0.9rem" }}
+                >
+                  Studio Formateur
+                </Link>
+              )}
+              {isAdmin && (
+                <Link 
+                  href="/admin" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  style={{ padding: "0.4rem 0", color: "#c084fc", fontWeight: 600, fontSize: "0.9rem" }}
+                >
+                  Administration
+                </Link>
+              )}
+              <button 
+                type="button"
+                onClick={() => { setIsMobileMenuOpen(false); signOut(); }}
+                style={{ 
+                  marginTop: "0.5rem", 
+                  padding: "0.55rem", 
+                  borderRadius: "0.5rem", 
+                  background: "rgba(239, 68, 68, 0.1)", 
+                  border: "1px solid rgba(239, 68, 68, 0.3)", 
+                  color: "#ef4444", 
+                  cursor: "pointer", 
+                  fontWeight: 600, 
+                  fontSize: "0.88rem" 
+                }}
+              >
+                Déconnexion
+              </button>
+            </>
+          ) : (
+            <>
+              <Link 
+                href="/courses" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ padding: "0.4rem 0", color: isCoursesActive ? "#fe9100" : "white", fontWeight: 600, fontSize: "0.92rem" }}
+              >
+                Catalogue des cours
+              </Link>
+              <Link 
+                href="/dashboard/profile" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ padding: "0.4rem 0", color: "#9ca3af", fontSize: "0.9rem" }}
               >
                 Devenir formateur
               </Link>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "0.5rem" }}>
-                <Link 
-                  href="/login" 
-                  className="btn btn-secondary" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ width: "100%", justifyContent: "center" }}
-                >
-                  Connexion
-                </Link>
-                <Link 
-                  href="/register" 
-                  className="btn btn-primary" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ width: "100%", justifyContent: "center" }}
-                >
-                  S inscrire
-                </Link>
-              </div>
-            </div>
+              <Link 
+                href="/login" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ padding: "0.4rem 0", color: "#d1d5db", fontSize: "0.9rem" }}
+              >
+                Connexion
+              </Link>
+            </>
           )}
         </div>
       )}
-    </nav>
+    </header>
   );
 }

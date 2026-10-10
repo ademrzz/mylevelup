@@ -14,66 +14,80 @@ export default async function LearnLayout({
   const resolvedParams = await params;
   const session = await getServerSession(authOptions);
 
+  // Pas connecté : on laisse la page de la leçon rediriger vers /login,
+  // car elle sait revenir directement sur la bonne leçon après la connexion.
   if (!session?.user) {
-    redirect("/login");
+    return <>{children}</>;
   }
 
   const userId = (session.user as any).id;
   const courseId = resolvedParams.courseId;
 
-  // Verify enrollment
-  const enrollment = await prisma.enrollment.findUnique({
-    where: {
-      userId_courseId: {
-        userId,
-        courseId,
-      }
-    }
-  });
-
-  if (!enrollment) {
-    redirect(`/courses/${courseId}`); // Kick them back to course marketing page if not enrolled
-  }
-
-  // Fetch course and curriculum
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    include: {
-      chapters: {
-        orderBy: { position: "asc" },
-        include: {
-          lessons: {
-            orderBy: { position: "asc" },
-          }
-        }
-      }
-    }
-  });
+  const [enrollment, dbUser, course] = await Promise.all([
+    prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+    }),
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        chapters: {
+          orderBy: { position: "asc" },
+          include: {
+            lessons: {
+              orderBy: { position: "asc" },
+            },
+          },
+        },
+      },
+    }),
+  ]);
 
   if (!course) {
     notFound();
   }
 
-  // Fetch user progress for this course
+  // Accès complet : inscrit, formateur du cours ou admin
+  const hasFullAccess =
+    !!enrollment || dbUser?.role === "ADMIN" || course.instructorId === userId;
+
+  if (!hasFullAccess) {
+    // Un non-inscrit n'entre que pour voir les aperçus gratuits d'un cours publié.
+    const hasFreeLesson = course.chapters.some((ch) => ch.lessons.some((l) => l.isFree));
+    if (!course.isPublished || !hasFreeLesson) {
+      redirect(`/courses/${courseId}`);
+    }
+  }
+
+  // 🔒 Le panneau latéral est un composant « client » : tout ce qu'on lui passe est
+  // visible dans le navigateur. On retire donc les liens vidéo et descriptions
+  // (le lecteur les récupère côté serveur, uniquement si l'accès est autorisé).
+  const safeChapters = course.chapters.map((ch) => ({
+    ...ch,
+    lessons: ch.lessons.map((l) => ({ ...l, videoUrl: null, description: null })),
+  }));
+
+  // Progression de l'utilisateur pour ce cours
   const progressRecords = await prisma.userProgress.findMany({
     where: {
       userId,
       lesson: {
         chapter: {
-          courseId
-        }
-      }
-    }
+          courseId,
+        },
+      },
+    },
   });
 
-  const completedLessonIds = progressRecords.filter(p => p.isCompleted).map(p => p.lessonId);
+  const completedLessonIds = progressRecords.filter((p) => p.isCompleted).map((p) => p.lessonId);
 
   return (
     <LearnTheaterView
       courseId={course.id}
       courseTitle={course.title}
-      chapters={course.chapters}
+      chapters={safeChapters}
       completedLessonIds={completedLessonIds}
+      hasFullAccess={hasFullAccess}
     >
       {children}
     </LearnTheaterView>

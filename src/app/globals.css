@@ -1,6 +1,6 @@
 :root {
-  --background: #ffffff;
-  --foreground: #1d1d1f; /* Apple's dark grey text */
+  --background: #090d16;
+  --foreground: #f3f4f6;
 
   /* Primary brand colors */
   --brand-orange: #fe9100;
@@ -9,38 +9,26 @@
   
   /* Gradients based on brand colors */
   --gradient-blue: linear-gradient(135deg, #00a0dc, #007bb5);
-  --gradient-orange: linear-gradient(135deg, #fe9100, #cc7400);
+  --gradient-orange: linear-gradient(135deg, #fe9100, #ea580c);
   --gradient-green: linear-gradient(135deg, #7bd416, #63a812);
 
   /* Premium UI colors */
-  --surface: rgba(255, 255, 255, 0.7); /* For glassmorphism */
-  --surface-solid: #ffffff;
-  --surface-hover: #f5f5f7; /* Apple's standard light grey */
-  --border: rgba(0, 0, 0, 0.08);
-  --text-muted: #86868b; /* Apple's muted grey */
+  --surface: rgba(15, 22, 36, 0.75);
+  --surface-solid: #0d131f;
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-hover: rgba(255, 255, 255, 0.18);
+  --text-muted: #9ca3af;
 
   --radius-sm: 0.5rem;
   --radius-md: 1rem;
   --radius-lg: 1.5rem;
   --radius-full: 9999px;
   
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12);
-  --shadow-glow: 0 8px 24px rgba(0, 160, 220, 0.25);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #000000;
-    --foreground: #f5f5f7;
-    
-    --surface: rgba(28, 28, 30, 0.7);
-    --surface-solid: #1c1c1e;
-    --surface-hover: #2c2c2e;
-    --border: rgba(255, 255, 255, 0.1);
-    --text-muted: #86868b;
-  }
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 8px 24px rgba(254, 145, 0, 0.25);
 }
 
 html,
@@ -204,8 +192,116 @@ p {
 }
 
 /* Responsive Utilities */
-.hidden-mobile { display: flex; }
-.show-mobile { display: none; }
+.hidden-mobile { display: flex !important; }
+.show-mobile { display: none !important; }
+.desktop-only { display: inline-flex !important; }
+.mobile-only { display: none !important; }
+
+@media (max-width: 860px) {
+  .hidden-mobile { display: none !important; }
+  .show-mobile { display: flex !important; }
+  .desktop-only { display: none !important; }
+  .mobile-only { display: inline-flex !important; }
+}
+
+/* ===================================================
+   PROFESSIONAL ONE-LINE RESPONSIVE HEADER
+   =================================================== */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  background: rgba(9, 13, 22, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.site-header-inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  height: 64px;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  gap: 0.75rem;
+}
+
+/* Left: Logo */
+.header-col-left {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0%;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+/* Center: Catalogue des cours (centered via flex distribution) */
+.header-col-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.header-catalog-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.15rem;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.header-catalog-pill:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.header-catalog-pill.active {
+  color: #fe9100;
+  background: rgba(254, 145, 0, 0.12);
+  border-color: rgba(254, 145, 0, 0.35);
+  box-shadow: 0 2px 12px rgba(254, 145, 0, 0.18);
+}
+
+/* Right: User / Auth actions */
+.header-col-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 0%;
+  gap: 0.65rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .site-header-inner {
+    height: 58px;
+    padding: 0 0.85rem;
+    gap: 0.5rem;
+  }
+  .header-catalog-pill {
+    padding: 0.38rem 0.85rem;
+    font-size: 0.82rem;
+  }
+}
 
 .mobile-menu {
   position: absolute;
